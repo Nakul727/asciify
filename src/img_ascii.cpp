@@ -25,8 +25,11 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	//--------------------------------------------------------------------------
+
+	// read the image
 	Mat image;
-	string img_dir = "./images/";
+	string img_dir = "../images/";
 
 	image = imread(img_dir + string(argv[1]), IMREAD_GRAYSCALE);
 	if (image.empty())
@@ -35,6 +38,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	// find the scale factor and downsize the image to terminal size
 	int height = image.size().height;
 	int width = image.size().width;
 	float scale = static_cast<float>(width) / height;
@@ -45,14 +49,24 @@ int main(int argc, char *argv[])
 	Mat resized_image;
 	cv::resize(image, resized_image, cv::Size(new_width, new_height));
 
+	// cout << new_height << " " << new_width << endl;
+	// // display the rezied image;
+	// imshow("Display window", resized_image);
+	// waitKey(0);
+
+	//--------------------------------------------------------------------------
+
+	// NCURSES and ASCII mapping
 	string ascii_chars = ".,:;+*?%S#@";
 
+	// Initialize ncurses
 	initscr();
 	noecho();
 	curs_set(0);
 	keypad(stdscr, TRUE);
 	nodelay(stdscr, TRUE);
 
+	// Check if the terminal supports colors
 	if (has_colors() == FALSE)
 	{
 		endwin();
@@ -60,13 +74,18 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	// Start color
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLACK);
 	wbkgd(stdscr, COLOR_PAIR(1));
 
+	// Create a new window
 	WINDOW *win = newwin(new_height, new_width, 0, 0);
 	wbkgd(win, COLOR_PAIR(1));
 
+	//--------------------------------------------------------------------------
+
+	// variables
 	int ch;
 	int term_height, term_width;
 
@@ -75,11 +94,13 @@ int main(int argc, char *argv[])
 	int sml = strlen(start_message);
 	int rml = strlen(resize_message);
 
+	// initial message
 	ch = getch();
 	getmaxyx(stdscr, term_height, term_width);
 	mvwprintw(win, term_height / 2, (term_width / 2) - (sml / 2), start_message);
 	wrefresh(win);
 
+	// main loop
 	for (;;)
 	{
 		ch = getch();
@@ -124,9 +145,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// Wait for a key press before exiting
 	getch();
+
+	// Clean up NCurses
 	endwin();
 
+	//--------------------------------------------------------------------------
 
 	return 0;
 }
