@@ -1,107 +1,100 @@
 #include <iostream>
 #include <string>
 #include <cstdio>
+#include <thread>
 
 #include "asciify.hpp"
-
-WINDOW *init_ncurses()
-{
-    // create a full screen ncurses window
-    initscr();
-    cbreak();
-    noecho();
-    curs_set(0);
-    keypad(stdscr, TRUE);
-
-    int row, col;
-    getmaxyx(stdscr, row, col);
-
-    WINDOW *win = newwin(row, col, 0, 0);
-    box(win, 0, 0);
-    wrefresh(win);
-
-    return win;
-}
 
 
 int main(int argc, char *argv[])
 {
+    std::cout << "\n";
 
-    // user input on what the program should do
-    cout << "What would you like to do?" << endl;
-    cout << "1. Render an ASCII image from ./images in terminal" << endl;
-    cout << "2. Render live webcam in ASCII in the terminal" << endl;
-    cout << "Please enter your choice (1 or 2): ";
+    std::cout << "What would you like to do?\n"
+              << "1. Render an ASCII image from ./images in terminal\n"
+              << "2. Render live webcam in ASCII in the terminal\n"
+              << "Please enter your choice (1 or 2): ";
 
     int choice;
-    cin >> choice;
-
-    // check if the choice is valid
+    std::cin >> choice;
     if (choice != 1 && choice != 2) {
-        cout << "Error: Invalid choice." << endl;
+        std::cout << "Error: Invalid choice." << std::endl;
         return 0;
     }
 
-    cout << endl;
+    std::cout << "\n";
 
-    // colored or not?
-    cout << "Would you like it to be colored?" << endl;
-    cout << "1. Yes" << endl;
-    cout << "2. No" << endl;
-    cout << "Please enter your choice (1 or 2): ";
+    std::cout << "Select one of the following: \n"
+              << "1. Grayscale\n"
+              << "2. Colored\n"
+              << "Please enter your choice (1 or 2): ";
 
     int color_choice;
-    cin >> color_choice;
-    
-    // check if the choice is valid
+    std::cin >> color_choice;
     if (color_choice != 1 && color_choice != 2) {
-        cout << "Error: Invalid choice." << endl;
+        std::cout << "Error: Invalid choice." << std::endl;
         return 0;
     }
 
-    cout << endl;
-
-    // -----------------------------------------------------------
+    std::cout << "\n";
 
     if (choice == 1)
     {
         // read the image name from the user
-        string img_name;
-        cout << "Please enter the name of the image: ";
-        cin >> img_name;
+        std::string img_name;
+        std::cout << "Please enter the name of the image: ";
+        std::cin >> img_name;
 
-        // check if the image name is valid or not
-        bool valid_img = check_img_name(img_name);
+        // validate image and type
+        bool valid_img = checkImage(img_name);
         if (valid_img) {
-            cout << "Received Image: " << img_name << endl;
+            std::cout << "Received Image: " << img_name << std::endl;
         } else {
-            cout << "Error: Failed to check_image_name." << endl;
+            std::cout << "Error: rrrr." << std::endl;
             return 0;
         }
 
         // read the image
-        Mat image;
-        string img_path = "./images/" + img_name;
-        if (color_choice == 1)
-            image = imread(img_path, IMREAD_COLOR);
-        else if (color_choice == 2)
-            image = imread(img_path, IMREAD_GRAYSCALE);
-
+        cv::Mat image;
+        image = readImage(img_name, color_choice);
         if (image.empty()) {
-            cout << "Error: Failed to read image" << endl;
+            std::cout << "Error: Failed to read image" << std::endl;
             return 0;
         }
 
-        WINDOW *win = init_ncurses();
-        render_image(win, image, color_choice);
+        // read the refresh rate from the user
+        int refresh_rate;
+        std::cout << "Please enter the refresh rate in seconds: ";
+        std::cin >> refresh_rate;
+
+        // initalize ncurses
+        WINDOW *win = initNcurses();
+        if (win == NULL) {
+            std::cout << "Error: Failed to initialize ncurses" << std::endl;
+            return 0;
+        }
+        
+        // render the image
+        while (true) {
+            renderImage(win, image, color_choice);
+            std::this_thread::sleep_for(std::chrono::seconds(refresh_rate));
+        }
+        delwin(win);
     }
     else if (choice == 2)
     {
-        WINDOW *win = init_ncurses();
-        render_video(win, color_choice);
+        // initialize ncurses
+        WINDOW *win = initNcurses();
+        if (win == NULL) {
+            std::cout << "Error: Failed to initialize ncurses" << std::endl;
+            return 0;
+        }
+
+        // render the video
+        renderVideo(win, color_choice);
+        delwin(win);
     }
 
-    // -----------------------------------------------------------
 
     return 0;
 }

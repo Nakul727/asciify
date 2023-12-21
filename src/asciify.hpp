@@ -3,19 +3,19 @@
 
 #include <iostream>
 #include <string>
-#include <cstdio>
 
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/core/utility.hpp>
 #include <ncurses.h>
 
-using namespace std;
-using namespace cv;
+WINDOW *initNcurses();
+bool checkImage(std::string img_name);
+cv::Mat readImage(std::string img_name, int color_choice);
 
-bool check_img_name(string img_name);
-void render_image(WINDOW *win, Mat image, int color_choice);
-void render_video(WINDOW *win, int color_choice);
+void renderImage(WINDOW *win, cv::Mat& image, int color_choice);
+void renderVideo(WINDOW *win, int color_choice);
 
 #endif

@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -std=c++11 -O3 
+CFLAGS = -std=c++17 -O3 
 LIBS = `pkg-config --cflags --libs opencv4` -lncurses
 SRC = ./src
 OBJ = ./obj
