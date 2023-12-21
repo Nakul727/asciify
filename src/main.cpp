@@ -5,6 +5,7 @@
 
 #include "asciify.hpp"
 
+#define FPS 30
 
 int main(int argc, char *argv[])
 {
@@ -91,7 +92,8 @@ int main(int argc, char *argv[])
         }
 
         // render the video
-        renderVideo(win, color_choice);
+        int fps = FPS;
+        renderWebcam(win, color_choice, fps);
         delwin(win);
     }
 

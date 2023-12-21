@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdio>
 
+
 #include "asciify.hpp"
 
 #define ASCII_CHARS ".,:;+*?&%S#@"
@@ -10,7 +11,42 @@
 
 // HELPER FUNCTIONS
 
-// ----------------------------------------------------------------------------
+void imgtoAscii(WINDOW* win,cv::Mat &image, int disp_height, int disp_width, int start_x, int start_y)
+{
+    for (int i = 0; i < disp_height; ++i)
+    {
+        for (int j = 0; j < disp_width; ++j)
+        {
+            int intensity = image.at<uchar>(i, j);
+            int index = intensity / 25;
+            mvwprintw(win, start_y + i, start_x + j, "%c", ASCII_CHARS[index]);
+        }
+    }
+    return;
+}
+
+void imgtoColorAscii(WINDOW* win, cv::Mat &image, int disp_height, int disp_width, int start_x, int start_y)
+{
+    for (int i = 0; i < disp_height; ++i) 
+    {
+        for (int j = 0; j < disp_width; ++j)
+        {
+            cv::Vec3b color = image.at<cv::Vec3b>(i, j);
+            int r = color[2] / 51;
+            int g = color[1] / 51;
+            int b = color[0] / 51;
+            int color_pair_index = 36 * r + 6 * g + b + 1; // +1 because color pair 0 is reserved
+
+            int intensity = (color[0] + color[1] + color[2]) / 3;
+            int index = intensity / 25;
+
+            wattron(win, COLOR_PAIR(color_pair_index));
+            mvwprintw(win, start_y + i, start_x + j, "%c", ASCII_CHARS[index]);
+            wattroff(win, COLOR_PAIR(color_pair_index));
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 
 // HEADER FUNCTIONS
@@ -24,14 +60,27 @@ WINDOW *initNcurses()
 
     // initialize color
     start_color();
-    if (!has_colors())
+    if (!has_colors() || !can_change_color() || COLOR_PAIRS < 217 || COLORS < 216)
     {
         endwin();
         std::cout << "Error: Terminal does not support color." << std::endl;
         return NULL;
     }
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);
-    init_pair(2, COLOR_BLACK, COLOR_WHITE);
+
+    // Initialize 216 color pairs
+    for (int r = 0; r < 6; ++r)
+    {
+        for (int g = 0; g < 6; ++g)
+        {
+            for (int b = 0; b < 6; ++b)
+            {
+                // Create a color and initialize a color pair for it
+                int color_index = 36 * r + 6 * g + b + 1; // +1 because color 0 is reserved
+                init_color(color_index, r * 1000 / 5, g * 1000 / 5, b * 1000 / 5);
+                init_pair(color_index, color_index, COLOR_BLACK);
+            }
+        }
+    }
     wbkgd(stdscr, COLOR_PAIR(1));
 
     // draw the border
@@ -87,13 +136,9 @@ cv::Mat readImage(std::string img_name, int color_choice)
     std::string img_dir = "./images/";
     const std::string img_path = img_dir + img_name;
     if (color_choice == 1)
-    {
         image = cv::imread(img_path, cv::IMREAD_GRAYSCALE);
-    }
     else if (color_choice == 2)
-    {
         image = cv::imread(img_path, cv::IMREAD_COLOR);
-    }
 
     // check if the image is empty
     if (image.empty())
@@ -110,8 +155,6 @@ void renderImage(WINDOW *win, cv::Mat &image, int color_choice)
     wclear(win);
     box(win, 0, 0);
 
-    // ------------------------------------------------------------------------
-
     // get the dimension of the current screen
     int t_height, t_width;
     getmaxyx(win, t_height, t_width);
@@ -124,25 +167,11 @@ void renderImage(WINDOW *win, cv::Mat &image, int color_choice)
     int img_height = image.rows;
     int img_width = image.cols;
 
-    // display the terminal size and image size and aspect ratio
-    std::string msg1 = "Original Image size: " + std::to_string(img_height) + "x" + std::to_string(img_width);
-    std::string msg2 = "Terminal size: " + std::to_string(t_height) + "x" + std::to_string(t_width);
-    mvwprintw(win, 1, 1, msg1.c_str());
-    mvwprintw(win, 2, 1, msg2.c_str());
-
-    // ------------------------------------------------------------------------
-
     // calculate the aspect ratio of the displayed ascii image
     float disp_height, disp_width, aspect_ratio;
     disp_height = (float)(img_height);
     disp_width = (float)(img_width * 1.75);
     aspect_ratio = disp_height / disp_width;
-
-    // display the display size and aspect ratio
-    std::string msg3 = "Display size: " + std::to_string(disp_height) + "x" + std::to_string(disp_width);
-    std::string msg4 = "Aspect Ratio: " + std::to_string(aspect_ratio);
-    mvwprintw(win, 3, 1, msg3.c_str());
-    mvwprintw(win, 4, 1, msg4.c_str());
 
     // size it down to fit the terminal height and width
     if (disp_width > t_width) {
@@ -160,13 +189,6 @@ void renderImage(WINDOW *win, cv::Mat &image, int color_choice)
         disp_width = img_width -2;
     }
 
-
-    // display the new display size
-    std::string msg5 = "New Display size: " + std::to_string(disp_height) + "x" + std::to_string(disp_width);
-    mvwprintw(win, 5, 1, msg5.c_str());
-
-    // ------------------------------------------------------------------------
-
     // // resize the image by creating a copy of the image
     cv::Mat image_copy = image.clone();
     cv::resize(image_copy, image_copy, cv::Size(disp_width, disp_height));
@@ -177,38 +199,41 @@ void renderImage(WINDOW *win, cv::Mat &image, int color_choice)
 
     // render the image
     if (color_choice == 1)
-    {
-        for (int i = 0; i < disp_height; ++i)
-        {
-            for (int j = 0; j < disp_width; ++j)
-            {
-                int intensity = image_copy.at<uchar>(i, j);
-                int index = intensity / 25;
-                mvwprintw(win, start_y + i, start_x + j, "%c", ASCII_CHARS[index]);
-            }
-        }
-    }
-    // else if (color_choice == 2){
-    //     for (int i = 0; i < disp_height; ++i)
-    //     {
-    //         for (int j = 0; j < disp_width; ++j)
-    //         {
-    //             cv::Vec3b intensity = image_copy.at<cv::Vec3b>(i, j);
-    //             int index = (intensity[0] + intensity[1] + intensity[2]) / 3 / 25;
-    //             mvwprintw(win, start_y + i, start_x + j, "%c", ASCII_CHARS[index]);
-    //         }
-    //     }
-    // }
+        imgtoAscii(win, image_copy, disp_height, disp_width, start_x, start_y);
+    else if (color_choice == 2)
+        imgtoColorAscii(win, image_copy, disp_height, disp_width, start_x, start_y);
 
-    // ------------------------------------------------------------------------
-
+    // refresh the window
     wrefresh(win);
     return;
 }
 
-void renderVideo(WINDOW *win, const int color_choice)
+void renderWebcam(WINDOW *win, int color_choice, int fps)
 {
-    return;
+    // Open the default webcam
+    cv::VideoCapture cap(0);
+    if (!cap.isOpened())
+    {
+        std::cout << "Error: Could not open webcam." << std::endl;
+        return;
+    }
+
+    // Read and display each frame
+    cv::Mat frame;
+    while (true)
+    {
+        // Read the next frame
+        if (!cap.read(frame)) {
+            break;
+        }
+
+        // Display the frame
+        renderImage(win, frame, color_choice);
+
+        // Wait for 1000/FPS ms
+        napms(1000 / fps);
+    }
+    cap.release();
 }
 
 // ----------------------------------------------------------------------------

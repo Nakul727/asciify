@@ -16,6 +16,6 @@ bool checkImage(std::string img_name);
 cv::Mat readImage(std::string img_name, int color_choice);
 
 void renderImage(WINDOW *win, cv::Mat& image, int color_choice);
-void renderVideo(WINDOW *win, int color_choice);
+void renderWebcam(WINDOW *win, int color_choice, int fps);
 
 #endif
