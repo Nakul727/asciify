@@ -5,8 +5,6 @@
 
 #include "asciify.hpp"
 
-#define FPS 30
-
 int main(int argc, char *argv[])
 {
     std::cout << "\n";
@@ -18,7 +16,8 @@ int main(int argc, char *argv[])
 
     int choice;
     std::cin >> choice;
-    if (choice != 1 && choice != 2) {
+    if (choice != 1 && choice != 2)
+    {
         std::cout << "Error: Invalid choice." << std::endl;
         return 0;
     }
@@ -32,7 +31,8 @@ int main(int argc, char *argv[])
 
     int color_choice;
     std::cin >> color_choice;
-    if (color_choice != 1 && color_choice != 2) {
+    if (color_choice != 1 && color_choice != 2)
+    {
         std::cout << "Error: Invalid choice." << std::endl;
         return 0;
     }
@@ -48,17 +48,21 @@ int main(int argc, char *argv[])
 
         // validate image and type
         bool valid_img = checkImage(img_name);
-        if (valid_img) {
+        if (valid_img)
+        {
             std::cout << "Received Image: " << img_name << std::endl;
-        } else {
-            std::cout << "Error: rrrr." << std::endl;
+        }
+        else
+        {
+            std::cout << "Error: Image not valid." << std::endl;
             return 0;
         }
 
         // read the image
         cv::Mat image;
         image = readImage(img_name, color_choice);
-        if (image.empty()) {
+        if (image.empty())
+        {
             std::cout << "Error: Failed to read image" << std::endl;
             return 0;
         }
@@ -70,13 +74,15 @@ int main(int argc, char *argv[])
 
         // initalize ncurses
         WINDOW *win = initNcurses();
-        if (win == NULL) {
+        if (win == NULL)
+        {
             std::cout << "Error: Failed to initialize ncurses" << std::endl;
             return 0;
         }
-        
+
         // render the image
-        while (true) {
+        while (true)
+        {
             renderImage(win, image, color_choice);
             std::this_thread::sleep_for(std::chrono::seconds(refresh_rate));
         }
@@ -84,19 +90,22 @@ int main(int argc, char *argv[])
     }
     else if (choice == 2)
     {
+        // read the fps from the user
+        int fps;
+        std::cout << "Please enter the fps: ";
+        std::cin >> fps;
+
         // initialize ncurses
         WINDOW *win = initNcurses();
-        if (win == NULL) {
+        if (win == NULL)
+        {
             std::cout << "Error: Failed to initialize ncurses" << std::endl;
             return 0;
         }
 
-        // render the video
-        int fps = FPS;
         renderWebcam(win, color_choice, fps);
         delwin(win);
     }
-
 
     return 0;
 }

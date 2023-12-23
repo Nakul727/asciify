@@ -2,14 +2,17 @@
 #include <string>
 #include <cstdio>
 
-
 #include "asciify.hpp"
 
 #define ASCII_CHARS ".,:;+*?&%S#@"
+#define CHAR_DISTORTION 1.75
+#define V_BORDER 20
+#define H_BORDER 10
 
 // ----------------------------------------------------------------------------
 
 // HELPER FUNCTIONS
+
 
 void imgtoAscii(WINDOW* win,cv::Mat &image, int disp_height, int disp_width, int start_x, int start_y)
 {
@@ -19,7 +22,7 @@ void imgtoAscii(WINDOW* win,cv::Mat &image, int disp_height, int disp_width, int
         {
             int intensity = image.at<uchar>(i, j);
             int index = intensity / 25;
-            mvwprintw(win, start_y + i, start_x + j, "%c", ASCII_CHARS[index]);
+            mvwprintw(win, start_y + i, start_x + j, "%s", ASCII_CHARS[index]);
         }
     }
     return;
@@ -75,13 +78,13 @@ WINDOW *initNcurses()
             for (int b = 0; b < 6; ++b)
             {
                 // Create a color and initialize a color pair for it
-                int color_index = 36 * r + 6 * g + b + 1; // +1 because color 0 is reserved
+                int color_index = (36 * r) + (6 * g) + (b) + (1); // +1 because color 0 is reserved
                 init_color(color_index, r * 1000 / 5, g * 1000 / 5, b * 1000 / 5);
                 init_pair(color_index, color_index, COLOR_BLACK);
             }
         }
     }
-    wbkgd(stdscr, COLOR_PAIR(1));
+    wbkgd(stdscr, COLOR_BLACK);
 
     // draw the border
     box(stdscr, 0, 0);
@@ -170,23 +173,23 @@ void renderImage(WINDOW *win, cv::Mat &image, int color_choice)
     // calculate the aspect ratio of the displayed ascii image
     float disp_height, disp_width, aspect_ratio;
     disp_height = (float)(img_height);
-    disp_width = (float)(img_width * 1.75);
+    disp_width = (float)(img_width * CHAR_DISTORTION);
     aspect_ratio = disp_height / disp_width;
 
     // size it down to fit the terminal height and width
     if (disp_width > t_width) {
-        disp_width = t_width - 2;
+        disp_width = t_width - H_BORDER;
         disp_height = disp_width * aspect_ratio;
     } 
     else if (disp_height > t_height)
     {
-        disp_height = t_height - 2;
+        disp_height = t_height - V_BORDER;
         disp_width = disp_height / aspect_ratio;
     } 
     else 
     {
-        disp_height = img_height -2;
-        disp_width = img_width -2;
+        disp_height = img_height - V_BORDER;
+        disp_width = img_width - H_BORDER;
     }
 
     // // resize the image by creating a copy of the image
